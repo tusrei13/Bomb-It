@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                 "-std=c++17",
+                 "-o",
+                 "BombIT",
+                 "main.cpp",
+                 "-Iinclude",
+                 "-Llib",
+                 "-lmingw32",
+                 "-lSDL2main",
+                 "-lSDL2",
+                 "-lSDL2_image",
+                 "-lSDL2_mixer"
+],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"],
+            "detail": "Compile the project using g++"
+        }
+    ]
+}
