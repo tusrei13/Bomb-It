@@ -7,27 +7,11 @@
 #include <cstdlib>
 #include <ctime>
 
-const int TILE_SIZE = 45;
+const int TILE_SIZE = 47;
 const int MAP_WIDTH = 17;
 const int MAP_HEIGHT = 15;
-const int WINDOW_WIDTH = 1091;
-const int WINDOW_HEIGHT = 675;
-
-enum TileType {
-    FLOOR = 0,
-    BRICK = 1,
-    WALL = 2
-};
-
-enum PowerUpType {
-    EXTRA_BOMB,
-    INCREASE_RANGE,
-    INCREASE_SPEED,
-    EXTRA_LIFE,
-    SHIELD,
-    BOMB_LAUNCHER,
-    INVINCIBILITY
-};
+const int WINDOW_WIDTH = 1280;
+const int WINDOW_HEIGHT = 720;
 
 enum GameState {
     MENU,
@@ -88,21 +72,13 @@ struct Bot : public Player {
     }
 };
 
-struct PowerUp {
-    PowerUpType type;
-    SDL_Texture* texture;
-    SDL_Rect rect;
-    int x, y;
-    bool active;
-};
-
 struct GameSettings {
     int players;
     std::string arena;
     Difficulty difficulty;
 };
 
-void loadMap(const std::string& filename, std::vector<std::vector<int>>& map) {
+void loadMapFromTxt(const std::string& filename, std::vector<std::vector<int>>& map) {
     std::ifstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Failed to open map file: " << filename << std::endl;
@@ -125,33 +101,27 @@ SDL_Texture* loadTexture(SDL_Renderer* renderer, const std::string& path) {
     return texture;
 }
 
-void handlePlayerDeath(Player& player, SDL_Texture* floorTexture) {
+void handlePlayerDeath(Player& player) {
     // Removed logic related to shield, invincible, and alive
-    player.texture = floorTexture;
+    player.texture = nullptr; // Set texture to nullptr to indicate death
 }
 
-void drawMap(SDL_Renderer* renderer, const std::vector<std::vector<int>>& map, SDL_Texture* floorTexture, std::vector<PowerUp>& powerUps) {
-    SDL_Rect destRect = { 0, 0, TILE_SIZE, TILE_SIZE };
+void drawMap(SDL_Renderer* renderer, const std::vector<std::vector<int>>& map) {
+    SDL_Rect destRect = { 350, 0, TILE_SIZE, TILE_SIZE }; // Start rendering from x = 350
     for (int y = 0; y < MAP_HEIGHT; ++y) {
         for (int x = 0; x < MAP_WIDTH; ++x) {
-            if (map[y][x] == FLOOR) {
-                destRect.x = 326 + x * TILE_SIZE;
-                destRect.y = y * TILE_SIZE;
-                SDL_RenderCopy(renderer, floorTexture, nullptr, &destRect);
-            }
-            // Add more conditions if needed for other tile types
-        }
-    }
+            destRect.x = 350 + x * TILE_SIZE; // Offset by 350 pixels from the left
+            destRect.y = y * TILE_SIZE;
 
-    // Draw power-ups
-    for (auto& powerUp : powerUps) {
-        if (powerUp.active) {
-            SDL_RenderCopy(renderer, powerUp.texture, nullptr, &powerUp.rect);
+            // Ensure the map does not exceed the right boundary (WINDOW_WIDTH - 103)
+            if (destRect.x + TILE_SIZE <= WINDOW_WIDTH - 103) {
+                SDL_RenderFillRect(renderer, &destRect); // Render as a filled rectangle
+            }
         }
     }
 }
 
-void handleBombExplosion(Bomb& bomb, std::vector<Player>& players, std::vector<Bot>& bots, std::vector<std::vector<int>>& map, std::vector<PowerUp>& powerUps, Mix_Chunk* explosionSound, SDL_Texture* floorTexture) {
+void handleBombExplosion(Bomb& bomb, std::vector<Player>& players, std::vector<Bot>& bots, std::vector<std::vector<int>>& map, Mix_Chunk* explosionSound, SDL_Texture* floorTexture) {
     if (SDL_GetTicks() - bomb.startTime >= 3000 && !bomb.exploded) {
         bomb.exploded = true;
         Mix_PlayChannel(-1, explosionSound, 0);
@@ -159,20 +129,20 @@ void handleBombExplosion(Bomb& bomb, std::vector<Player>& players, std::vector<B
         // Check for player collision with explosion
         for (auto& player : players) {
             if (player.x == bomb.x && player.y == bomb.y) {
-                handlePlayerDeath(player, floorTexture);
+                handlePlayerDeath(player);
             }
         }
 
         // Check for bot collision with explosion
         for (auto& bot : bots) {
             if (bot.x == bomb.x && bot.y == bomb.y) {
-                handlePlayerDeath(bot, floorTexture);
+                handlePlayerDeath(bot);
             }
         }
 
-        // Destroy bricks without spawning power-ups
-        if (map[bomb.y][bomb.x] == BRICK) {
-            map[bomb.y][bomb.x] = FLOOR;
+        // Destroy bricks
+        if (map[bomb.y][bomb.x] == 1) { // Assuming 1 represents a brick
+            map[bomb.y][bomb.x] = 0; // Assuming 0 represents a floor
         }
     }
 }
@@ -180,48 +150,48 @@ void handleBombExplosion(Bomb& bomb, std::vector<Player>& players, std::vector<B
 void drawMenu(SDL_Renderer* renderer, SDL_Texture* menuTexture, SDL_Texture* startMenuButtonTextures[2], SDL_Texture* howToPlayButtonTextures[2], bool startHover, bool howToPlayHover) {
     SDL_RenderCopy(renderer, menuTexture, nullptr, nullptr);
 
-    SDL_Rect startButtonRect = { 400, 200, 300, 100 }; // Larger button for MENU
+    SDL_Rect startButtonRect = { 701, 221, 287, 74 }; // Updated position and size for START button
     SDL_RenderCopy(renderer, startMenuButtonTextures[startHover ? 1 : 0], nullptr, &startButtonRect);
 
-    SDL_Rect howToPlayButtonRect = { 400, 350, 300, 100 };
+    SDL_Rect howToPlayButtonRect = { 697, 327, 287, 74 }; // Updated position and size for HOW TO PLAY button
     SDL_RenderCopy(renderer, howToPlayButtonTextures[howToPlayHover ? 1 : 0], nullptr, &howToPlayButtonRect);
 }
 
-void drawHowToPlay(SDL_Renderer* renderer, SDL_Texture* howToPlayTexture, SDL_Texture* backButtonTextures[2], bool backHover) {
+void drawHowToPlay(SDL_Renderer* renderer, SDL_Texture* howToPlayTexture, SDL_Texture* howToPlayBackButtonTextures[2], bool backHover) {
     SDL_RenderCopy(renderer, howToPlayTexture, nullptr, nullptr);
 
-    SDL_Rect backButtonRect = { 50, 50, 200, 100 };
-    SDL_RenderCopy(renderer, backButtonTextures[backHover ? 1 : 0], nullptr, &backButtonRect);
+    SDL_Rect backButtonRect = { 42, 34, 182, 64 }; // Position and size for BACK button in HOW TO PLAY
+    SDL_RenderCopy(renderer, howToPlayBackButtonTextures[backHover ? 1 : 0], nullptr, &backButtonRect);
 }
 
-void drawGameSettings(SDL_Renderer* renderer, SDL_Texture* gameSettingsTexture, SDL_Texture* backButtonTextures[2], SDL_Texture* playButtonTextures[2], bool backHover, bool playHover, const GameSettings& settings, SDL_Texture* player1Textures[3], SDL_Texture* player2Textures[3], SDL_Texture* basketballTextures[3], SDL_Texture* tombTextures[3], SDL_Texture* easyTextures[3], SDL_Texture* normalTextures[3], SDL_Texture* hardTextures[3], int selectedPlayer, int selectedArena, int selectedDifficulty) {
+void drawGameSettings(SDL_Renderer* renderer, SDL_Texture* gameSettingsTexture, SDL_Texture* gameSettingsBackButtonTextures[2], SDL_Texture* startSettingsButtonTextures[2], bool backHover, bool startHover, const GameSettings& settings, SDL_Texture* player1Textures[3], SDL_Texture* player2Textures[3], SDL_Texture* basketballTextures[3], SDL_Texture* tombTextures[3], SDL_Texture* easyTextures[3], SDL_Texture* normalTextures[3], SDL_Texture* hardTextures[3], int selectedPlayer, int selectedArena, int selectedDifficulty, bool player1Hover, bool player2Hover, bool basketballHover, bool tombHover, bool easyHover, bool normalHover, bool hardHover) {
     SDL_RenderCopy(renderer, gameSettingsTexture, nullptr, nullptr);
 
-    SDL_Rect backButtonRect = { 50, 50, 200, 100 };
-    SDL_RenderCopy(renderer, backButtonTextures[backHover ? 1 : 0], nullptr, &backButtonRect);
+    SDL_Rect backButtonRect = { 430, 625, 182, 64 }; // Position and size for BACK button in GAME SETTINGS
+    SDL_RenderCopy(renderer, gameSettingsBackButtonTextures[backHover ? 1 : 0], nullptr, &backButtonRect);
 
-    SDL_Rect playButtonRect = { 800, 500, 200, 80 }; // Play button replaces Next
-    SDL_RenderCopy(renderer, playButtonTextures[playHover ? 1 : 0], nullptr, &playButtonRect);
+    SDL_Rect startButtonRect = { 662, 625, 192, 64 }; // Position and size for START button
+    SDL_RenderCopy(renderer, startSettingsButtonTextures[startHover ? 1 : 0], nullptr, &startButtonRect);
 
     // Draw player buttons
-    SDL_Rect player1Rect = { 100, 200, 100, 100 };
-    SDL_Rect player2Rect = { 250, 200, 100, 100 };
-    SDL_RenderCopy(renderer, player1Textures[selectedPlayer == 1 ? 2 : 0], nullptr, &player1Rect);
-    SDL_RenderCopy(renderer, player2Textures[selectedPlayer == 2 ? 2 : 0], nullptr, &player2Rect);
+    SDL_Rect player1Rect = { 502, 302, 62, 30 };
+    SDL_Rect player2Rect = { 565, 302, 62, 30 };
+    SDL_RenderCopy(renderer, player1Textures[selectedPlayer == 1 ? 2 : (player1Hover ? 1 : 0)], nullptr, &player1Rect);
+    SDL_RenderCopy(renderer, player2Textures[selectedPlayer == 2 ? 2 : (player2Hover ? 1 : 0)], nullptr, &player2Rect);
 
     // Draw arena buttons
-    SDL_Rect basketballRect = { 100, 350, 100, 100 };
-    SDL_Rect tombRect = { 250, 350, 100, 100 };
-    SDL_RenderCopy(renderer, basketballTextures[selectedArena == 1 ? 2 : 0], nullptr, &basketballRect);
-    SDL_RenderCopy(renderer, tombTextures[selectedArena == 2 ? 2 : 0], nullptr, &tombRect);
+    SDL_Rect basketballRect = { 502, 358, 218, 30 };
+    SDL_Rect tombRect = { 721, 358, 218, 30 };
+    SDL_RenderCopy(renderer, basketballTextures[selectedArena == 1 ? 2 : (basketballHover ? 1 : 0)], nullptr, &basketballRect);
+    SDL_RenderCopy(renderer, tombTextures[selectedArena == 2 ? 2 : (tombHover ? 1 : 0)], nullptr, &tombRect);
 
     // Draw difficulty buttons
-    SDL_Rect easyRect = { 100, 500, 100, 100 };
-    SDL_Rect normalRect = { 250, 500, 100, 100 };
-    SDL_Rect hardRect = { 400, 500, 100, 100 };
-    SDL_RenderCopy(renderer, easyTextures[selectedDifficulty == EASY ? 2 : 0], nullptr, &easyRect);
-    SDL_RenderCopy(renderer, normalTextures[selectedDifficulty == NORMAL ? 2 : 0], nullptr, &normalRect);
-    SDL_RenderCopy(renderer, hardTextures[selectedDifficulty == HARD ? 2 : 0], nullptr, &hardRect);
+    SDL_Rect easyRect = { 502, 414, 118, 30 };
+    SDL_Rect normalRect = { 621, 414, 118, 30 };
+    SDL_Rect hardRect = { 740, 414, 118, 30 };
+    SDL_RenderCopy(renderer, easyTextures[selectedDifficulty == EASY ? 2 : (easyHover ? 1 : 0)], nullptr, &easyRect);
+    SDL_RenderCopy(renderer, normalTextures[selectedDifficulty == NORMAL ? 2 : (normalHover ? 1 : 0)], nullptr, &normalRect);
+    SDL_RenderCopy(renderer, hardTextures[selectedDifficulty == HARD ? 2 : (hardHover ? 1 : 0)], nullptr, &hardRect);
 }
 
 void playIntroSequence(SDL_Renderer* renderer, SDL_Texture* introTextures[3]) {
@@ -241,7 +211,6 @@ void updateGameSettings(GameSettings& settings, std::vector<Bot>& bots) {
     }
 
     // Removed logic for setting bot.speed based on difficulty
-    // ...existing code...
 }
 
 void drawPauseScreen(SDL_Renderer* renderer, SDL_Texture* pauseTexture, SDL_Texture* mainMenuButtonTextures[2], SDL_Texture* resumeButtonTextures[2], bool mainMenuHover, bool resumeHover) {
@@ -260,6 +229,43 @@ void drawWinScreen(SDL_Renderer* renderer, SDL_Texture* winTexture) {
 
 void drawLoseScreen(SDL_Renderer* renderer, SDL_Texture* loseTexture) {
     SDL_RenderCopy(renderer, loseTexture, nullptr, nullptr);
+}
+
+void renderGameScreen(SDL_Renderer* renderer, SDL_Texture* leftPanelTexture, SDL_Texture* topFrameTexture, SDL_Texture* bottomFrameTexture, SDL_Texture* rightFrameTexture, SDL_Texture* mapTexture) {
+    // Render left panel
+    SDL_Rect leftPanelRect = { 0, 0, 365, 720 };
+    SDL_RenderCopy(renderer, leftPanelTexture, nullptr, &leftPanelRect);
+
+    // Render top border (frame)
+    SDL_Rect topFrameRect = { 365, 0, 799, 3 };
+    SDL_RenderCopy(renderer, topFrameTexture, nullptr, &topFrameRect);
+
+    // Render game map grid
+    SDL_Rect mapRect = { 365, 3, 799, 705 };
+    SDL_RenderCopy(renderer, mapTexture, nullptr, &mapRect);
+
+    // Render bottom border (frame)
+    SDL_Rect bottomFrameRect = { 365, 708, 799, 12 };
+    SDL_RenderCopy(renderer, bottomFrameTexture, nullptr, &bottomFrameRect);
+
+    // Render right border (frame)
+    SDL_Rect rightFrameRect = { 1164, 0, 116, 720 };
+    SDL_RenderCopy(renderer, rightFrameTexture, nullptr, &rightFrameRect);
+}
+
+void renderMapFromTxt(SDL_Renderer* renderer, const std::vector<std::vector<int>>& map, SDL_Texture* textures[]) {
+    SDL_Rect destRect = { 365, 3, TILE_SIZE, TILE_SIZE }; // Start rendering from x = 365, y = 3
+    for (int y = 0; y < MAP_HEIGHT; ++y) {
+        for (int x = 0; x < MAP_WIDTH; ++x) {
+            destRect.x = 365 + x * TILE_SIZE;
+            destRect.y = 3 + y * TILE_SIZE;
+
+            int tileId = map[y][x];
+            if (tileId >= 0 && tileId <= 5) {
+                SDL_RenderCopy(renderer, textures[tileId], nullptr, &destRect);
+            }
+        }
+    }
 }
 
 Mix_Chunk* clickSound = nullptr;
@@ -300,32 +306,74 @@ int main(int argc, char* argv[]) {
     }
 
     // Load textures
-    SDL_Texture* leftPanelTexture = loadTexture(renderer, "assets/image/screens/left_panel.png");
-    SDL_Texture* basketballFloorTexture = loadTexture(renderer, "assets/image/basketball_floor.png");
-    SDL_Texture* tombFloorTexture = loadTexture(renderer, "assets/image/tomb_floor.png");
     SDL_Texture* playerTextures[4] = {
         loadTexture(renderer, "assets/image/players/player1.png"),
         loadTexture(renderer, "assets/image/players/player2.png"),
         loadTexture(renderer, "assets/image/players/player3.png"),
         loadTexture(renderer, "assets/image/players/player4.png")
     };
-    SDL_Texture* bombTexture = loadTexture(renderer, "assets/image/bomb.png");
-    SDL_Texture* explosionTexture = loadTexture(renderer, "assets/image/explosion.png");
 
-    // Load menu textures
+    SDL_Texture* leftPanelTexture = loadTexture(renderer, "assets/image/screens/left_panel.png");
+    SDL_Texture* topFrameTexture = loadTexture(renderer, "assets/image/screens/frame_top.png");
+    SDL_Texture* bottomFrameTexture = loadTexture(renderer, "assets/image/screens/frame_bottom.png");
+    SDL_Texture* rightFrameTexture = loadTexture(renderer, "assets/image/screens/frame_right.png");
+
+    SDL_Texture* basketballTextures[6] = {
+        loadTexture(renderer, "assets/image/tiles/basketball/floor.png"),
+        loadTexture(renderer, "assets/image/tiles/basketball/brick_1.png"),
+        loadTexture(renderer, "assets/image/tiles/basketball/wall_1.png"),
+        loadTexture(renderer, "assets/image/tiles/basketball/wall_2.png"),
+        loadTexture(renderer, "assets/image/tiles/basketball/brick_2.png"),
+        loadTexture(renderer, "assets/image/tiles/basketball/brick_3.png")
+    };
+
+    SDL_Texture* tombTextures[6] = {
+        loadTexture(renderer, "assets/image/tiles/tomb/floor.png"),
+        loadTexture(renderer, "assets/image/tiles/tomb/brick_1.png"),
+        loadTexture(renderer, "assets/image/tiles/tomb/wall_1.png"),
+        loadTexture(renderer, "assets/image/tiles/tomb/wall_2.png"),
+        loadTexture(renderer, "assets/image/tiles/tomb/brick_2.png"),
+        loadTexture(renderer, "assets/image/tiles/tomb/brick_3.png")
+    };
+
+    if (!leftPanelTexture || !topFrameTexture || !bottomFrameTexture || !rightFrameTexture) {
+        std::cerr << "Failed to load one or more textures. Exiting..." << std::endl;
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        SDL_Quit();
+        return -1;
+    }
+
+    // Load menu texture with error handling
     SDL_Texture* menuTexture = loadTexture(renderer, "assets/image/screens/menu.png");
+    if (!menuTexture) {
+        std::cerr << "Failed to load menu texture. Exiting..." << std::endl;
+        return -1;
+    }
+
     SDL_Texture* startMenuButtonTextures[2] = {
         loadTexture(renderer, "assets/image/buttons/start_menu_button_normal.png"),
         loadTexture(renderer, "assets/image/buttons/start_menu_button_hover.png")
     };
+    if (!startMenuButtonTextures[0] || !startMenuButtonTextures[1]) {
+        std::cerr << "Failed to load start menu button textures. Exiting..." << std::endl;
+        return -1;
+    }
+
     SDL_Texture* howToPlayButtonTextures[2] = {
         loadTexture(renderer, "assets/image/buttons/how_to_play_button_normal.png"),
         loadTexture(renderer, "assets/image/buttons/how_to_play_button_hover.png")
     };
+    if (!howToPlayButtonTextures[0] || !howToPlayButtonTextures[1]) {
+        std::cerr << "Failed to load how-to-play button textures. Exiting..." << std::endl;
+        return -1;
+    }
+
     SDL_Texture* howToPlayTexture = loadTexture(renderer, "assets/image/screens/how_to_play.png");
-    SDL_Texture* backButtonTextures[2] = {
-        loadTexture(renderer, "assets/image/buttons/back_button_normal.png"),
-        loadTexture(renderer, "assets/image/buttons/back_button_hover.png")
+    SDL_Texture* howToPlayBackButtonTextures[2] = {
+        loadTexture(renderer, "assets/image/buttons/how_to_play_back_normal.png"),
+        loadTexture(renderer, "assets/image/buttons/how_to_play_back_hover.png")
     };
     SDL_Texture* gameSettingsTexture = loadTexture(renderer, "assets/image/screens/game_settings.png");
     SDL_Texture* startSettingsButtonTextures[2] = {
@@ -342,43 +390,53 @@ int main(int argc, char* argv[]) {
 
     // Load player button textures
     SDL_Texture* player1Textures[3] = {
-        loadTexture(renderer, "assets/image/player1_normal.png"),
-        loadTexture(renderer, "assets/image/player1_hover.png"),
-        loadTexture(renderer, "assets/image/player1_click.png")
+        loadTexture(renderer, "assets/image/buttons/player1_normal.png"),
+        loadTexture(renderer, "assets/image/buttons/player1_hover.png"),
+        loadTexture(renderer, "assets/image/buttons/player1_click.png")
     };
     SDL_Texture* player2Textures[3] = {
-        loadTexture(renderer, "assets/image/player2_normal.png"),
-        loadTexture(renderer, "assets/image/player2_hover.png"),
-        loadTexture(renderer, "assets/image/player2_click.png")
+        loadTexture(renderer, "assets/image/buttons/player2_normal.png"),
+        loadTexture(renderer, "assets/image/buttons/player2_hover.png"),
+        loadTexture(renderer, "assets/image/buttons/player2_click.png")
     };
 
     // Load arena button textures
-    SDL_Texture* basketballTextures[3] = {
-        loadTexture(renderer, "assets/image/basketball_normal.png"),
-        loadTexture(renderer, "assets/image/basketball_hover.png"),
-        loadTexture(renderer, "assets/image/basketball_click.png")
+    SDL_Texture* basketballArenaTextures[3] = {
+        loadTexture(renderer, "assets/image/buttons/basketball_normal.png"),
+        loadTexture(renderer, "assets/image/buttons/basketball_hover.png"),
+        loadTexture(renderer, "assets/image/buttons/basketball_click.png")
     };
-    SDL_Texture* tombTextures[3] = {
-        loadTexture(renderer, "assets/image/tomb_normal.png"),
-        loadTexture(renderer, "assets/image/tomb_hover.png"),
-        loadTexture(renderer, "assets/image/tomb_click.png")
+    SDL_Texture* tombArenaTextures[3] = {
+        loadTexture(renderer, "assets/image/buttons/tomb_normal.png"),
+        loadTexture(renderer, "assets/image/buttons/tomb_hover.png"),
+        loadTexture(renderer, "assets/image/buttons/tomb_click.png")
     };
 
     // Load difficulty button textures
     SDL_Texture* easyTextures[3] = {
-        loadTexture(renderer, "assets/image/easy_normal.png"),
-        loadTexture(renderer, "assets/image/easy_hover.png"),
-        loadTexture(renderer, "assets/image/easy_click.png")
+        loadTexture(renderer, "assets/image/buttons/easy_normal.png"),
+        loadTexture(renderer, "assets/image/buttons/easy_hover.png"),
+        loadTexture(renderer, "assets/image/buttons/easy_click.png")
     };
     SDL_Texture* normalTextures[3] = {
-        loadTexture(renderer, "assets/image/normal_normal.png"),
-        loadTexture(renderer, "assets/image/normal_hover.png"),
-        loadTexture(renderer, "assets/image/normal_click.png")
+        loadTexture(renderer, "assets/image/buttons/normal_normal.png"),
+        loadTexture(renderer, "assets/image/buttons/normal_hover.png"),
+        loadTexture(renderer, "assets/image/buttons/normal_click.png")
     };
     SDL_Texture* hardTextures[3] = {
-        loadTexture(renderer, "assets/image/hard_normal.png"),
-        loadTexture(renderer, "assets/image/hard_hover.png"),
-        loadTexture(renderer, "assets/image/hard_click.png")
+        loadTexture(renderer, "assets/image/buttons/hard_normal.png"),
+        loadTexture(renderer, "assets/image/buttons/hard_hover.png"),
+        loadTexture(renderer, "assets/image/buttons/hard_click.png")
+    };
+
+    SDL_Texture* gameSettingsBackButtonTextures[2] = {
+        loadTexture(renderer, "assets/image/buttons/game_settings_back_normal.png"),
+        loadTexture(renderer, "assets/image/buttons/game_settings_back_hover.png")
+    };
+
+    SDL_Texture* pauseButtonTextures[2] = {
+        loadTexture(renderer, "assets/image/buttons/pause_button_normal.png"),
+        loadTexture(renderer, "assets/image/buttons/pause_button_hover.png")
     };
 
     // Load sound
@@ -423,10 +481,10 @@ int main(int argc, char* argv[]) {
     // Play menu music initially
     Mix_PlayMusic(menuMusic, -1);
 
-    // Load maps
+    // Load maps from .txt files
     std::vector<std::vector<int>> basketballMap, tombMap;
-    loadMap("map/basketball_map.txt", basketballMap);
-    loadMap("map/tomb_map.txt", tombMap);
+    loadMapFromTxt("map/basketball_map.txt", basketballMap);
+    loadMapFromTxt("map/tomb_map.txt", tombMap);
 
     // Initialize players and bots
     std::vector<Player> players(2);
@@ -455,18 +513,12 @@ int main(int argc, char* argv[]) {
     players[0].x = 0; players[0].y = 0;
     players[1].x = MAP_WIDTH - 1; players[1].y = 0;
 
-    // Choose map to display (for example, BASKETBALL map)
-    std::vector<std::vector<int>>* currentMap = &basketballMap;
-    SDL_Texture* currentFloorTexture = basketballFloorTexture;
-
     std::vector<Bomb> bombs;
-    std::vector<PowerUp> powerUps;
 
     int selectedPlayer = 1;
     int selectedArena = 1;
     int selectedDifficulty = EASY;
 
-    SDL_Texture* pauseTexture = loadTexture(renderer, "pause.png");
     SDL_Texture* mainMenuButtonTextures[2] = {
         loadTexture(renderer, "assets/image/buttons/main_menu_button_normal.png"),
         loadTexture(renderer, "assets/image/buttons/main_menu_button_hover.png")
@@ -476,13 +528,8 @@ int main(int argc, char* argv[]) {
         loadTexture(renderer, "assets/image/buttons/resume_button_hover.png")
     };
 
-    SDL_Texture* winTexture = loadTexture(renderer, "you_win.png");
-    SDL_Texture* loseTexture = loadTexture(renderer, "you_lose.png");
-
-    SDL_Texture* playButtonTextures[2] = {
-        loadTexture(renderer, "assets/image/buttons/play_button_normal.png"),
-        loadTexture(renderer, "assets/image/buttons/play_button_hover.png")
-    };
+    SDL_Texture* winTexture = loadTexture(renderer, "assets/image/you_win.png");
+    SDL_Texture* loseTexture = loadTexture(renderer, "assets/image/you_lose.png");
 
     GameState gameState = MENU;
 
@@ -497,8 +544,10 @@ int main(int argc, char* argv[]) {
             if (gameState == MENU) {
                 int x, y;
                 SDL_GetMouseState(&x, &y);
-                bool startHover = (x >= 400 && x <= 700 && y >= 200 && y <= 300);
-                bool howToPlayHover = (x >= 400 && x <= 700 && y >= 350 && y <= 450);
+
+                // Correct hover detection for START and HOW TO PLAY buttons
+                bool startHover = (x >= 701 && x <= 988 && y >= 221 && y <= 295); // Updated to match START button position and size
+                bool howToPlayHover = (x >= 697 && x <= 984 && y >= 327 && y <= 401); // Updated to match HOW TO PLAY button position and size
 
                 if (event.type == SDL_MOUSEBUTTONDOWN) {
                     if (startHover || howToPlayHover) {
@@ -507,58 +556,125 @@ int main(int argc, char* argv[]) {
                     if (startHover) {
                         gameState = GAME_SETTINGS; // Transition to GAME_SETTINGS
                     } else if (howToPlayHover) {
-                        gameState = HOW_TO_PLAY;
+                        gameState = HOW_TO_PLAY; // Transition to HOW_TO_PLAY
                     }
                 }
 
+                // Clear screen before rendering
+                SDL_RenderClear(renderer);
+
+                // Render menu
                 drawMenu(renderer, menuTexture, startMenuButtonTextures, howToPlayButtonTextures, startHover, howToPlayHover);
+
+                // Present the rendered frame
+                SDL_RenderPresent(renderer);
             } else if (gameState == INTRO_SEQUENCE) {
                 playIntroSequence(renderer, introTextures);
                 gameState = GAME_SETTINGS;
             } else if (gameState == HOW_TO_PLAY) {
                 int x, y;
                 SDL_GetMouseState(&x, &y);
-                bool backHover = (x >= 50 && x <= 250 && y >= 50 && y <= 150);
+                bool backHover = (x >= 42 && x <= 224 && y >= 34 && y <= 98); // Position for BACK button in HOW TO PLAY
 
-                if (event.type == SDL_MOUSEBUTTONDOWN) {
+                if (event.type == SDL_MOUSEBUTTONDOWN && backHover) {
                     Mix_PlayChannel(-1, clickSound, 0); // Play click sound
-                    if (backHover) {
-                        gameState = MENU;
-                    }
+                    gameState = MENU; // Return to MENU
                 }
 
-                drawHowToPlay(renderer, howToPlayTexture, backButtonTextures, backHover);
+                // Clear screen before rendering
+                SDL_RenderClear(renderer);
+
+                // Render HOW TO PLAY screen
+                drawHowToPlay(renderer, howToPlayTexture, howToPlayBackButtonTextures, backHover);
+
+                // Present the rendered frame
+                SDL_RenderPresent(renderer);
             } else if (gameState == GAME_SETTINGS) {
                 int x, y;
                 SDL_GetMouseState(&x, &y);
-                bool backHover = (x >= 50 && x <= 250 && y >= 50 && y <= 150);
-                bool playHover = (x >= 800 && x <= 1000 && y >= 500 && y <= 580);
+
+                // Hover detection for buttons
+                bool backHover = (x >= 430 && x <= 612 && y >= 625 && y <= 689);
+                bool startHover = (x >= 662 && x <= 854 && y >= 625 && y <= 689);
+                bool player1Hover = (x >= 502 && x <= 564 && y >= 302 && y <= 332);
+                bool player2Hover = (x >= 565 && x <= 627 && y >= 302 && y <= 332);
+                bool basketballHover = (x >= 502 && x <= 720 && y >= 358 && y <= 388);
+                bool tombHover = (x >= 721 && x <= 939 && y >= 358 && y <= 388);
+                bool easyHover = (x >= 502 && x <= 620 && y >= 414 && y <= 444);
+                bool normalHover = (x >= 621 && x <= 739 && y >= 414 && y <= 444);
+                bool hardHover = (x >= 740 && x <= 858 && y >= 414 && y <= 444);
 
                 if (event.type == SDL_MOUSEBUTTONDOWN) {
-                    if (backHover || playHover) {
-                        Mix_PlayChannel(-1, clickSound, 0); // Play click sound
-                    }
                     if (backHover) {
-                        gameState = MENU;
-                    } else if (playHover) {
-                        gameState = PLAYING;
+                        Mix_PlayChannel(-1, clickSound, 0); // Play click sound
+                        gameState = MENU; // Return to MENU
+                    } else if (startHover) {
+                        Mix_PlayChannel(-1, clickSound, 0); // Play click sound
+
+                        // Play game music when transitioning to PLAYING
+                        Mix_HaltMusic();
+                        Mix_PlayMusic(gameMusic, -1);
+
+                        gameState = PLAYING; // Start the game
+                    } else if (player1Hover) {
+                        Mix_PlayChannel(-1, clickSound, 0); // Play click sound
+                        selectedPlayer = 1; // Select player1
+                    } else if (player2Hover) {
+                        Mix_PlayChannel(-1, clickSound, 0); // Play click sound
+                        selectedPlayer = 2; // Select player2
+                    } else if (basketballHover) {
+                        Mix_PlayChannel(-1, clickSound, 0); // Play click sound
+                        selectedArena = 1; // Select basketball arena
+                    } else if (tombHover) {
+                        Mix_PlayChannel(-1, clickSound, 0); // Play click sound
+                        selectedArena = 2; // Select tomb arena
+                    } else if (easyHover) {
+                        Mix_PlayChannel(-1, clickSound, 0); // Play click sound
+                        selectedDifficulty = EASY; // Select easy difficulty
+                    } else if (normalHover) {
+                        Mix_PlayChannel(-1, clickSound, 0); // Play click sound
+                        selectedDifficulty = NORMAL; // Select normal difficulty
+                    } else if (hardHover) {
+                        Mix_PlayChannel(-1, clickSound, 0); // Play click sound
+                        selectedDifficulty = HARD; // Select hard difficulty
                     }
                 }
 
-                drawGameSettings(renderer, gameSettingsTexture, backButtonTextures, playButtonTextures, backHover, playHover, settings, player1Textures, player2Textures, basketballTextures, tombTextures, easyTextures, normalTextures, hardTextures, selectedPlayer, selectedArena, selectedDifficulty);
+                // Clear screen before rendering
+                SDL_RenderClear(renderer);
+
+                // Render GAME SETTINGS screen
+                drawGameSettings(renderer, gameSettingsTexture, gameSettingsBackButtonTextures, startSettingsButtonTextures, backHover, startHover, settings, player1Textures, player2Textures, basketballArenaTextures, tombArenaTextures, easyTextures, normalTextures, hardTextures, selectedPlayer, selectedArena, selectedDifficulty, player1Hover, player2Hover, basketballHover, tombHover, easyHover, normalHover, hardHover);
+
+                // Present the rendered frame
+                SDL_RenderPresent(renderer);
             } else if (gameState == PLAYING) {
-                // Switch to game music if not already playing
-                if (Mix_PlayingMusic() == 0 || Mix_GetMusicType(NULL) != MUS_MP3) {
-                    Mix_HaltMusic();
-                    Mix_PlayMusic(gameMusic, -1);
+                // Clear screen before rendering
+                SDL_RenderClear(renderer);
+
+                // Render game screen based on the selected arena
+                if (selectedArena == 1) {
+                    renderGameScreen(renderer, leftPanelTexture, topFrameTexture, bottomFrameTexture, rightFrameTexture, nullptr);
+                    renderMapFromTxt(renderer, basketballMap, basketballTextures);
+                } else if (selectedArena == 2) {
+                    renderGameScreen(renderer, leftPanelTexture, topFrameTexture, bottomFrameTexture, rightFrameTexture, nullptr);
+                    renderMapFromTxt(renderer, tombMap, tombTextures);
                 }
 
-                if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_p) {
+                // Draw Pause button with updated position and size
+                int x, y;
+                SDL_GetMouseState(&x, &y);
+                bool pauseHover = (x >= 188 && x <= 328 && y >= 607 && y <= 647); // Updated hover detection
+                SDL_Rect pauseButtonRect = {188, 607, 140, 40}; // Updated position and size of Pause button
+                SDL_RenderCopy(renderer, pauseButtonTextures[pauseHover ? 1 : 0], nullptr, &pauseButtonRect);
+
+                // Handle pause button click
+                if (event.type == SDL_MOUSEBUTTONDOWN && pauseHover) {
                     Mix_PlayChannel(-1, clickSound, 0); // Play click sound
-                    gameState = PAUSE; // Switch to pause screen when 'P' is pressed
+                    gameState = PAUSE; // Transition to PAUSE state
                 }
 
-                // Removed logic for checking player.alive and bot.alive
+                // Handle game state transitions
                 int alivePlayers = players.size(); // Assume all players are active
                 int aliveBots = bots.size();       // Assume all bots are active
 
@@ -570,56 +686,54 @@ int main(int argc, char* argv[]) {
                     }
                 }
 
-                drawMap(renderer, *currentMap, currentFloorTexture, powerUps);
-
-                // Draw bombs
-                for (auto& bomb : bombs) {
-                    if (!bomb.exploded) {
-                        SDL_RenderCopy(renderer, bomb.texture, nullptr, &bomb.rect);
-                    } else {
-                        SDL_Rect explosionRect = { 326 + bomb.x * TILE_SIZE, bomb.y * TILE_SIZE, TILE_SIZE, TILE_SIZE };
-                        SDL_RenderCopy(renderer, explosionTexture, nullptr, &explosionRect);
-                    }
-                }
-
-                // Draw players
-                for (auto& player : players) {
-                    player.rect.x = 326 + player.x * TILE_SIZE;
-                    player.rect.y = player.y * TILE_SIZE;
-                    SDL_RenderCopy(renderer, player.texture, nullptr, &player.rect);
-                }
-
-                // Draw bots
-                for (auto& bot : bots) {
-                    bot.rect.x = 326 + bot.x * TILE_SIZE;
-                    bot.rect.y = bot.y * TILE_SIZE;
-                    SDL_RenderCopy(renderer, bot.texture, nullptr, &bot.rect);
-                }
-
-                // Handle bomb explosions
-                for (auto& bomb : bombs) {
-                    handleBombExplosion(bomb, players, bots, *currentMap, powerUps, explosionSound, currentFloorTexture);
-                }
-
                 SDL_RenderPresent(renderer);
             } else if (gameState == PAUSE) {
+                // Load the pause screen texture
+                SDL_Texture* pauseTexture = loadTexture(renderer, "assets/image/screens/pause.png");
+
+                // Clear screen before rendering
+                SDL_RenderClear(renderer);
+
+                // Render the pause screen
+                SDL_RenderCopy(renderer, pauseTexture, nullptr, nullptr);
+
+                // Get mouse position
                 int x, y;
                 SDL_GetMouseState(&x, &y);
-                bool mainMenuHover = (x >= 400 && x <= 700 && y >= 200 && y <= 300);
-                bool resumeHover = (x >= 400 && x <= 700 && y >= 350 && y <= 450);
 
+                // Hover detection for buttons
+                bool mainMenuHover = (x >= 403 && x <= 601 && y >= 624 && y <= 691); // Updated main menu button position
+                bool resumeHover = (x >= 688 && x <= 886 && y >= 624 && y <= 691);   // Updated resume button position
+
+                // Render main menu button
+                SDL_Rect mainMenuButtonRect = { 403, 624, 198, 67 }; // Updated position and size for main menu button
+                SDL_RenderCopy(renderer, mainMenuButtonTextures[mainMenuHover ? 1 : 0], nullptr, &mainMenuButtonRect);
+
+                // Render resume button
+                SDL_Rect resumeButtonRect = { 688, 624, 198, 67 }; // Updated position and size for resume button
+                SDL_RenderCopy(renderer, resumeButtonTextures[resumeHover ? 1 : 0], nullptr, &resumeButtonRect);
+
+                // Handle button clicks
                 if (event.type == SDL_MOUSEBUTTONDOWN) {
-                    if (mainMenuHover || resumeHover) {
-                        Mix_PlayChannel(-1, clickSound, 0); // Play click sound
-                    }
                     if (mainMenuHover) {
-                        gameState = MENU; // Go back to main menu
+                        Mix_PlayChannel(-1, clickSound, 0); // Play click sound
+
+                        // Play menu music when transitioning to MENU
+                        Mix_HaltMusic();
+                        Mix_PlayMusic(menuMusic, -1);
+
+                        gameState = MENU; // Transition to MENU
                     } else if (resumeHover) {
+                        Mix_PlayChannel(-1, clickSound, 0); // Play click sound
                         gameState = PLAYING; // Resume the game
                     }
                 }
 
-                drawPauseScreen(renderer, pauseTexture, mainMenuButtonTextures, resumeButtonTextures, mainMenuHover, resumeHover);
+                // Present the rendered frame
+                SDL_RenderPresent(renderer);
+
+                // Free the pause screen texture after rendering
+                SDL_DestroyTexture(pauseTexture);
             } else if (gameState == YOU_WIN || gameState == YOU_LOSE) {
                 // Switch back to menu music if not already playing
                 if (Mix_PlayingMusic() == 0 || Mix_GetMusicType(NULL) != MUS_MP3) {
@@ -651,35 +765,38 @@ int main(int argc, char* argv[]) {
         }
 
         // Ensure this block is properly closed
-        // ...existing code...
     }
 
     // Cleanup
     for (int i = 0; i < 4; ++i) {
         SDL_DestroyTexture(playerTextures[i]);
     }
-    SDL_DestroyTexture(leftPanelTexture);
-    SDL_DestroyTexture(basketballFloorTexture);
-    SDL_DestroyTexture(tombFloorTexture);
-    SDL_DestroyTexture(bombTexture);
-    SDL_DestroyTexture(explosionTexture);
     SDL_DestroyTexture(menuTexture);
     for (int i = 0; i < 2; ++i) {
         SDL_DestroyTexture(startMenuButtonTextures[i]);
         SDL_DestroyTexture(howToPlayButtonTextures[i]);
-        SDL_DestroyTexture(backButtonTextures[i]);
+        SDL_DestroyTexture(howToPlayBackButtonTextures[i]);
         SDL_DestroyTexture(startSettingsButtonTextures[i]);
         SDL_DestroyTexture(mainMenuButtonTextures[i]);
         SDL_DestroyTexture(resumeButtonTextures[i]);
-        SDL_DestroyTexture(playButtonTextures[i]);
+        SDL_DestroyTexture(gameSettingsBackButtonTextures[i]);
+        SDL_DestroyTexture(pauseButtonTextures[i]);
     }
     SDL_DestroyTexture(howToPlayTexture);
     SDL_DestroyTexture(gameSettingsTexture);
     for (int i = 0; i < 3; ++i) {
         SDL_DestroyTexture(introTextures[i]);
+        SDL_DestroyTexture(basketballArenaTextures[i]);
+        SDL_DestroyTexture(tombArenaTextures[i]);
+    }
+    for (int i = 0; i < 6; ++i) {
         SDL_DestroyTexture(basketballTextures[i]);
         SDL_DestroyTexture(tombTextures[i]);
     }
+    SDL_DestroyTexture(leftPanelTexture);
+    SDL_DestroyTexture(topFrameTexture);
+    SDL_DestroyTexture(bottomFrameTexture);
+    SDL_DestroyTexture(rightFrameTexture);
     Mix_FreeChunk(explosionSound);
     Mix_FreeChunk(clickSound);
     Mix_FreeMusic(menuMusic);
