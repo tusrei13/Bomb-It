@@ -3,7 +3,7 @@ CFLAGS = -Iinclude -std=c++17 -Wall
 LDFLAGS = -Llib -lSDL2 -lSDL2_image -lSDL2_mixer
 SRC = $(wildcard *.cpp) # Tự động tìm tất cả các file .cpp
 OBJ = $(SRC:.cpp=.o)
-TARGET = BombIt.exe
+TARGET = BombIT.exe
 
 all: $(TARGET)
 
