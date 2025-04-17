@@ -5,8 +5,10 @@
 Button::Button(const std::string& text, int x, int y, int width, int height, bool hasClickState)
     : text(text), x(x), y(y), width(width), height(height),
       normalTexture(nullptr), hoverTexture(nullptr), clickTexture(nullptr),
-      isHovered(false), isClicked(false), hasClickState(hasClickState),
-      audioManager(nullptr), hoverPlayed(false) {}
+      hovered(false), clicked(false), hasClickState(hasClickState),
+      audioManager(nullptr), hoverPlayed(false) {
+    position = {x, y, width, height}; // Khởi tạo vị trí và kích thước của nút
+}
 
 Button::~Button() {}
 
@@ -45,9 +47,9 @@ void Button::setAudio(AudioManager* audioManager) {
 
 void Button::render(SDL_Renderer* renderer) {
     SDL_Rect rect = {x, y, width, height};
-    if (isClicked && hasClickState) {
+    if (clicked && hasClickState) {
         SDL_RenderCopy(renderer, clickTexture, nullptr, &rect);
-    } else if (isHovered) {
+    } else if (hovered) {
         SDL_RenderCopy(renderer, hoverTexture, nullptr, &rect);
     } else {
         SDL_RenderCopy(renderer, normalTexture, nullptr, &rect);
@@ -55,7 +57,7 @@ void Button::render(SDL_Renderer* renderer) {
 }
 
 void Button::resetClick() {
-    isClicked = false; // Reset the clicked state
+    clicked = false;
 }
 
 bool Button::handleEvent(SDL_Event& event) {
@@ -65,20 +67,20 @@ bool Button::handleEvent(SDL_Event& event) {
         bool inside = mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height;
 
         if (inside) {
-            isHovered = true;
+            hovered = true;
             if (!hoverPlayed && audioManager) {
                 audioManager->playEffect("assets/audio/hover.wav");
                 hoverPlayed = true;
             }
             if (event.type == SDL_MOUSEBUTTONDOWN) {
-                isClicked = true;
+                clicked = true;
                 if (audioManager) {
                     audioManager->playEffect("assets/audio/click.wav");
                 }
                 return true;
             }
         } else {
-            isHovered = false;
+            hovered = false;
             hoverPlayed = false;
         }
     }
@@ -86,7 +88,7 @@ bool Button::handleEvent(SDL_Event& event) {
 }
 
 void Button::setClicked(bool clicked) {
-    isClicked = clicked;
+    this->clicked = clicked;
 }
 
 void Button::clean() {
@@ -102,4 +104,14 @@ void Button::clean() {
         SDL_DestroyTexture(clickTexture);
         clickTexture = nullptr;
     }
+}
+
+bool Button::isHovered(int x, int y) {
+    // Sử dụng position để kiểm tra nếu con trỏ chuột nằm trong vùng của nút
+    return x >= position.x && x <= position.x + position.w &&
+           y >= position.y && y <= position.y + position.h;
+}
+
+bool Button::isClicked(int x, int y) {
+    return isHovered(x, y);
 }

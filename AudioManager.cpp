@@ -13,6 +13,7 @@ bool AudioManager::init() {
         return false;
     }
     Mix_Volume(-1, MIX_MAX_VOLUME); // Set maximum volume for all channels
+    std::cout << "AudioManager initialized successfully." << std::endl;
     return true;
 }
 
@@ -50,10 +51,21 @@ void AudioManager::playEffect(const std::string& filePath) {
     Mix_FreeChunk(effect);
 }
 
+void AudioManager::playSound(const std::string& filePath) {
+    Mix_Chunk* sound = Mix_LoadWAV(filePath.c_str());
+    if (!sound) {
+        std::cerr << "Failed to load sound: " << filePath << " - " << Mix_GetError() << std::endl;
+        return;
+    }
+    Mix_PlayChannel(-1, sound, 0);
+    Mix_FreeChunk(sound); // Giải phóng tài nguyên sau khi phát
+}
+
 void AudioManager::clean() {
     if (currentMusic) {
         Mix_FreeMusic(currentMusic);
         currentMusic = nullptr;
     }
     Mix_CloseAudio();
+    std::cout << "AudioManager cleaned up." << std::endl;
 }

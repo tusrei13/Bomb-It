@@ -10,6 +10,8 @@ HowToPlay::HowToPlay()
 HowToPlay::~HowToPlay() {}
 
 void HowToPlay::init(SDL_Renderer* renderer, AudioManager* audioManager) {
+    this->audioManager = audioManager;
+    audioManager->playMusic("assets/audio/menu_music.mp3", -1); // Play menu music
     // Load background image
     SDL_Surface* surface = IMG_Load("assets/image/screens/how_to_play.png");
     if (!surface) {
@@ -26,6 +28,10 @@ void HowToPlay::init(SDL_Renderer* renderer, AudioManager* audioManager) {
 
     backButton.setTextures(renderer, "assets/image/buttons/how_to_play_back_normal.png", "assets/image/buttons/how_to_play_back_hover.png");
     backButton.setAudio(audioManager);
+
+    if (audioManager) {
+        audioManager->playMusic("assets/audio/menu_music.mp3");
+    }
 }
 
 void HowToPlay::render(SDL_Renderer* renderer) {
@@ -38,8 +44,12 @@ void HowToPlay::render(SDL_Renderer* renderer) {
 
 void HowToPlay::handleEvents(SDL_Event& event, ScreenState& currentState) {
     if (backButton.handleEvent(event)) {
-        std::cout << "Back button clicked!" << std::endl;
-        currentState = ScreenState::MENU; // Transition back to MENU screen
+        if (event.type == SDL_MOUSEMOTION) {
+            audioManager->playSound("assets/audio/hover.wav"); // Play hover sound
+        } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+            audioManager->playSound("assets/audio/click.wav"); // Play click sound
+            currentState = ScreenState::MENU; // Transition back to MENU screen
+        }
     }
 }
 

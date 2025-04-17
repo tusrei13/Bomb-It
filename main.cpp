@@ -37,26 +37,28 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    // Initialize screens
-    Menu menu;
-    HowToPlay howToPlay;
-    Intro intro;
-    GameSettings gameSettings;
-
+    // Initialize AudioManager
     AudioManager audioManager;
     if (!audioManager.init()) {
-        std::cerr << "Failed to initialize AudioManager!" << std::endl;
+        std::cerr << "Failed to initialize AudioManager" << std::endl;
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
         return -1;
     }
 
-    // Initialize screens with audioManager
-    menu.init(renderer, &audioManager);
-    howToPlay.init(renderer, &audioManager);
-    intro.init(renderer);
-    gameSettings.init(renderer, &audioManager);
+    // Initialize screens
+    Menu menu;
+    menu.init(renderer, &audioManager); // Khởi tạo menu với renderer và audioManager
 
-    // Play menu music initially
-    audioManager.playMusic("assets/audio/menu_music.mp3");
+    HowToPlay howToPlay;
+    howToPlay.init(renderer, &audioManager); // Khởi tạo howToPlay
+
+    Intro intro;
+    intro.init(renderer, &audioManager); // Khởi tạo intro
+
+    GameSettings gameSettings;
+    gameSettings.init(renderer, &audioManager); // Khởi tạo gameSettings
 
     ScreenState currentState = ScreenState::MENU;
     bool running = true;
@@ -75,20 +77,14 @@ int main(int argc, char* argv[]) {
                 if (currentState == ScreenState::INTRO) {
                     intro.reset(); // Reset intro state when transitioning from MENU to INTRO
                 }
-                if (currentState == ScreenState::HOW_TO_PLAY || currentState == ScreenState::GAME_SETTINGS) {
-                    audioManager.playMusic("assets/audio/menu_music.mp3"); // Ensure music continues
-                }
             } else if (currentState == ScreenState::HOW_TO_PLAY) {
                 howToPlay.handleEvents(event, currentState);
-                if (currentState == ScreenState::MENU || currentState == ScreenState::GAME_SETTINGS) {
-                    audioManager.playMusic("assets/audio/menu_music.mp3"); // Ensure music continues
-                }
             } else if (currentState == ScreenState::INTRO) {
                 intro.handleEvents(event, currentState);
             } else if (currentState == ScreenState::GAME_SETTINGS) {
                 gameSettings.handleEvents(event, currentState);
-                if (currentState == ScreenState::MENU || currentState == ScreenState::HOW_TO_PLAY) {
-                    audioManager.playMusic("assets/audio/menu_music.mp3"); // Ensure music continues
+                if (currentState == ScreenState::MENU) {
+                    gameSettings.reset(); // Reset game settings when transitioning back to MENU
                 }
             }
         }
@@ -113,6 +109,7 @@ int main(int argc, char* argv[]) {
     howToPlay.clean();
     intro.clean();
     gameSettings.clean();
+    audioManager.clean(); // Dọn dẹp AudioManager
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();

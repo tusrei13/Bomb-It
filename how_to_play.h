@@ -18,6 +18,7 @@ public:
 private:
     SDL_Texture* backgroundTexture;
     Button backButton;
+    AudioManager* audioManager; // Thêm thành viên audioManager
 };
 
 #endif // HOW_TO_PLAY_H

@@ -27,6 +27,7 @@ private:
     SDL_Texture* backgroundTexture;
     Button startMenuButton;
     Button howToPlayButton;
+    AudioManager* audioManager; // Thêm thành viên audioManager
 };
 
 #endif // MENU_H

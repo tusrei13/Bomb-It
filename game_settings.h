@@ -15,6 +15,7 @@ public:
     void render(SDL_Renderer* renderer);
     void handleEvents(SDL_Event& event, ScreenState& currentState);
     void clean();
+    void reset(); // Phương thức để reset trạng thái các nút
 
 private:
     SDL_Texture* backgroundTexture;
@@ -27,6 +28,7 @@ private:
     Button hardButton;
     Button backButton;
     Button startButton;
+    AudioManager* audioManager; // Thêm thành viên audioManager
 };
 
 #endif // GAME_SETTINGS_H

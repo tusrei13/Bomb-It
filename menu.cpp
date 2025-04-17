@@ -11,6 +11,8 @@ Menu::Menu()
 Menu::~Menu() {}
 
 void Menu::init(SDL_Renderer* renderer, AudioManager* audioManager) {
+    this->audioManager = audioManager;
+    audioManager->playMusic("assets/audio/menu_music.mp3", -1); // Play menu music
     // Load background image
     SDL_Surface* surface = IMG_Load("assets/image/screens/menu.png");
     if (!surface) {
@@ -30,6 +32,10 @@ void Menu::init(SDL_Renderer* renderer, AudioManager* audioManager) {
 
     startMenuButton.setAudio(audioManager);
     howToPlayButton.setAudio(audioManager);
+
+    if (audioManager) {
+        audioManager->playMusic("assets/audio/menu_music.mp3");
+    }
 }
 
 void Menu::render(SDL_Renderer* renderer) {
@@ -42,14 +48,21 @@ void Menu::render(SDL_Renderer* renderer) {
 }
 
 void Menu::handleEvents(SDL_Event& event, ScreenState& currentState) {
-    // Handle button events
     if (startMenuButton.handleEvent(event)) {
-        std::cout << "Start button clicked! Transitioning to Intro..." << std::endl;
-        currentState = ScreenState::INTRO; // Fix INTRO state
+        if (event.type == SDL_MOUSEBUTTONDOWN) {
+            audioManager->playSound("assets/audio/click.wav"); // Play click sound
+            audioManager->playMusic("assets/audio/intro.mp3", 0); // Play intro music
+            currentState = ScreenState::INTRO; // Transition to INTRO
+        }
     }
+
     if (howToPlayButton.handleEvent(event)) {
-        std::cout << "How to Play button clicked!" << std::endl;
-        currentState = ScreenState::HOW_TO_PLAY; // Transition to HOW TO PLAY screen
+        if (event.type == SDL_MOUSEMOTION) {
+            audioManager->playSound("assets/audio/hover.wav"); // Play hover sound
+        } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+            audioManager->playSound("assets/audio/click.wav"); // Play click sound
+            currentState = ScreenState::HOW_TO_PLAY; // Transition to HOW_TO_PLAY
+        }
     }
 }
 

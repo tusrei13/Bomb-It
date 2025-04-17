@@ -12,7 +12,7 @@ public:
     Intro();
     ~Intro();
 
-    void init(SDL_Renderer* renderer);
+    void init(SDL_Renderer* renderer, AudioManager* audioManager); // Cập nhật hàm init
     void handleEvents(SDL_Event& event, ScreenState& currentState);
     void update(ScreenState& currentState); // Update method now accepts ScreenState&
     void render(SDL_Renderer* renderer);
@@ -20,11 +20,12 @@ public:
     void reset(); // Add this method to reset intro state
 
 private:
-    std::vector<SDL_Texture*> images;
-    Mix_Music* introMusic;
-    int currentImageIndex;
-    Uint32 lastImageTime;
-    bool isFinished;
+    std::vector<SDL_Texture*> images; // Danh sách các ảnh intro
+    int currentImageIndex = 0;        // Chỉ số ảnh hiện tại
+    Uint32 lastImageTime = 0;         // Thời gian hiển thị ảnh cuối cùng
+    bool isFinished = false;          // Trạng thái hoàn thành intro
+    AudioManager* audioManager;       // Quản lý âm thanh
+    Mix_Music* introMusic;            // Âm thanh intro
 };
 
 #endif // INTRO_H

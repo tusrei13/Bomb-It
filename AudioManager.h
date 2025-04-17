@@ -13,6 +13,7 @@ public:
     void playMusic(const std::string& filePath, int loops = -1);
     void stopMusic();
     void playEffect(const std::string& filePath);
+    void playSound(const std::string& filePath); // Thêm phương thức playSound
     void clean();
 
 private:

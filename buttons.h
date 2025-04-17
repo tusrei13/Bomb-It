@@ -18,6 +18,8 @@ public:
     void resetClick(); // Add method to reset click state
     void clean();
     void setAudio(AudioManager* audioManager);
+    bool isHovered(int x, int y); // Thêm phương thức kiểm tra hover
+    bool isClicked(int x, int y); // Thêm phương thức kiểm tra click
 
 private:
     std::string text;
@@ -25,13 +27,14 @@ private:
     SDL_Texture* normalTexture;
     SDL_Texture* hoverTexture;
     SDL_Texture* clickTexture;
-    bool isHovered;
-    bool isClicked;
+    bool hovered; // Đổi tên từ isHovered
+    bool clicked; // Đổi tên từ isClicked
     bool hasClickState; // Indicates if the button has a click state
     AudioManager* audioManager;
     std::string hoverSoundPath;
     std::string clickSoundPath;
     bool hoverPlayed; // To prevent repeated hover sound
+    SDL_Rect position; // Thêm thành viên để lưu vị trí và kích thước của nút
 };
 
 #endif // BUTTONS_H

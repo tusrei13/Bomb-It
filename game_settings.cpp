@@ -18,6 +18,8 @@ GameSettings::GameSettings()
 GameSettings::~GameSettings() {}
 
 void GameSettings::init(SDL_Renderer* renderer, AudioManager* audioManager) {
+    this->audioManager = audioManager;
+    audioManager->playMusic("assets/audio/menu_music.mp3", -1); // Play menu music
     SDL_Surface* surface = IMG_Load("assets/image/screens/game_settings.png");
     if (!surface) {
         std::cerr << "Failed to load game_settings.png: " << IMG_GetError() << std::endl;
@@ -45,6 +47,10 @@ void GameSettings::init(SDL_Renderer* renderer, AudioManager* audioManager) {
     hardButton.setAudio(audioManager);
     backButton.setAudio(audioManager);
     startButton.setAudio(audioManager);
+
+    if (audioManager) {
+        audioManager->playMusic("assets/audio/menu_music.mp3");
+    }
 }
 
 void GameSettings::render(SDL_Renderer* renderer) {
@@ -62,10 +68,22 @@ void GameSettings::render(SDL_Renderer* renderer) {
 
 void GameSettings::handleEvents(SDL_Event& event, ScreenState& currentState) {
     if (backButton.handleEvent(event)) {
-        currentState = ScreenState::MENU;
+        if (event.type == SDL_MOUSEMOTION) {
+            audioManager->playSound("assets/audio/hover.wav"); // Play hover sound
+        } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+            audioManager->playSound("assets/audio/click.wav"); // Play click sound
+            audioManager->playMusic("assets/audio/menu_music.mp3", -1); // Play menu music
+            currentState = ScreenState::MENU; // Transition back to MENU
+        }
     }
+
     if (startButton.handleEvent(event)) {
-        currentState = ScreenState::GAME_MANAGER;
+        if (event.type == SDL_MOUSEMOTION) {
+            audioManager->playSound("assets/audio/hover.wav"); // Play hover sound
+        } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+            audioManager->playSound("assets/audio/click.wav"); // Play click sound
+            currentState = ScreenState::GAME_MANAGER; // Transition to GAME_MANAGER
+        }
     }
 
     // Handle player selection buttons
@@ -120,4 +138,16 @@ void GameSettings::clean() {
     hardButton.clean();
     backButton.clean();
     startButton.clean();
+}
+
+void GameSettings::reset() {
+    backButton.resetClick(); // Reset trạng thái nút game_settings_back
+    startButton.resetClick();   // Reset trạng thái nút start_settings_button
+    easyButton.resetClick();            // Reset trạng thái nút easy
+    normalButton.resetClick();          // Reset trạng thái nút normal
+    hardButton.resetClick();            // Reset trạng thái nút hard
+    basketballButton.resetClick();      // Reset trạng thái nút basketball
+    tombButton.resetClick();            // Reset trạng thái nút tomb
+    onePlayerButton.resetClick();       // Reset trạng thái nút 1player
+    twoPlayerButton.resetClick();       // Reset trạng thái nút 2player
 }
