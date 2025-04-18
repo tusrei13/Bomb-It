@@ -50,7 +50,7 @@ void Menu::render(SDL_Renderer* renderer) {
 void Menu::handleEvents(SDL_Event& event, ScreenState& currentState) {
     if (startMenuButton.handleEvent(event)) {
         if (event.type == SDL_MOUSEBUTTONDOWN) {
-            audioManager->playSound("assets/audio/click.wav"); // Play click sound
+            audioManager->playSound("assets/audio/click.mp3"); // Play click sound
             audioManager->playMusic("assets/audio/intro.mp3", 0); // Play intro music
             currentState = ScreenState::INTRO; // Transition to INTRO
         }
@@ -58,9 +58,9 @@ void Menu::handleEvents(SDL_Event& event, ScreenState& currentState) {
 
     if (howToPlayButton.handleEvent(event)) {
         if (event.type == SDL_MOUSEMOTION) {
-            audioManager->playSound("assets/audio/hover.wav"); // Play hover sound
+            audioManager->playSound("assets/audio/hover.mp3"); // Play hover sound
         } else if (event.type == SDL_MOUSEBUTTONDOWN) {
-            audioManager->playSound("assets/audio/click.wav"); // Play click sound
+            audioManager->playSound("assets/audio/click.mp3"); // Play click sound
             currentState = ScreenState::HOW_TO_PLAY; // Transition to HOW_TO_PLAY
         }
     }

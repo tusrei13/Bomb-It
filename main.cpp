@@ -13,7 +13,7 @@
 #include "menu.h"
 #include "how_to_play.h"
 #include "intro.h"
-#include "game_settings.h"
+#include "game_settings.h" 
 
 int main(int argc, char* argv[]) {
     // Initialize SDL

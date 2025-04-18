@@ -45,9 +45,9 @@ void HowToPlay::render(SDL_Renderer* renderer) {
 void HowToPlay::handleEvents(SDL_Event& event, ScreenState& currentState) {
     if (backButton.handleEvent(event)) {
         if (event.type == SDL_MOUSEMOTION) {
-            audioManager->playSound("assets/audio/hover.wav"); // Play hover sound
+            audioManager->playSound("assets/audio/hover.mp3"); // Play hover sound
         } else if (event.type == SDL_MOUSEBUTTONDOWN) {
-            audioManager->playSound("assets/audio/click.wav"); // Play click sound
+            audioManager->playSound("assets/audio/click.mp3"); // Play click sound
             currentState = ScreenState::MENU; // Transition back to MENU screen
         }
     }

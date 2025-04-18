@@ -52,13 +52,26 @@ void AudioManager::playEffect(const std::string& filePath) {
 }
 
 void AudioManager::playSound(const std::string& filePath) {
-    Mix_Chunk* sound = Mix_LoadWAV(filePath.c_str());
-    if (!sound) {
-        std::cerr << "Failed to load sound: " << filePath << " - " << Mix_GetError() << std::endl;
-        return;
+    // Kiểm tra xem âm thanh đã được load chưa
+    auto it = soundEffects.find(filePath);
+    Mix_Chunk* sound;
+    
+    if (it == soundEffects.end()) {
+        // Nếu chưa có trong cache thì load và lưu vào cache
+        sound = Mix_LoadWAV(filePath.c_str());
+        if (!sound) {
+            std::cerr << "Failed to load sound: " << filePath << " - " << Mix_GetError() << std::endl;
+            return;
+        }
+        soundEffects[filePath] = sound;
+    } else {
+        // Nếu đã có trong cache thì sử dụng lại
+        sound = it->second;
     }
-    Mix_PlayChannel(-1, sound, 0);
-    Mix_FreeChunk(sound); // Giải phóng tài nguyên sau khi phát
+    
+    if (Mix_PlayChannel(-1, sound, 0) == -1) {
+        std::cerr << "Failed to play sound: " << filePath << " - " << Mix_GetError() << std::endl;
+    }
 }
 
 void AudioManager::clean() {
@@ -66,6 +79,13 @@ void AudioManager::clean() {
         Mix_FreeMusic(currentMusic);
         currentMusic = nullptr;
     }
+    
+    // Giải phóng tất cả các sound effect đã cache
+    for (auto& pair : soundEffects) {
+        Mix_FreeChunk(pair.second);
+    }
+    soundEffects.clear();
+    
     Mix_CloseAudio();
     std::cout << "AudioManager cleaned up." << std::endl;
 }

@@ -61,34 +61,51 @@ void Button::resetClick() {
 }
 
 bool Button::handleEvent(SDL_Event& event) {
-    if (event.type == SDL_MOUSEMOTION || event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP) {
-        int mouseX = event.motion.x;
-        int mouseY = event.motion.y;
-        bool inside = mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height;
-
-        if (inside) {
-            hovered = true;
-            if (!hoverPlayed && audioManager) {
-                audioManager->playEffect("assets/audio/hover.wav");
-                hoverPlayed = true;
+    SDL_Point mousePos;
+    switch(event.type) {
+        case SDL_MOUSEMOTION:
+            mousePos = {event.motion.x, event.motion.y};
+            if (SDL_PointInRect(&mousePos, &position)) {
+                if (!hovered && audioManager && !hoverPlayed) {
+                    audioManager->playSound("assets/audio/hover.mp3");
+                    hoverPlayed = true;
+                }
+                hovered = true;
+            } else {
+                hovered = false;
+                hoverPlayed = false;
             }
-            if (event.type == SDL_MOUSEBUTTONDOWN) {
-                clicked = true;
+            break;
+            
+        case SDL_MOUSEBUTTONDOWN:
+            mousePos = {event.button.x, event.button.y};
+            if (event.button.button == SDL_BUTTON_LEFT && SDL_PointInRect(&mousePos, &position)) {
+                // Chỉ set clicked = true nếu button có clickState
+                if (hasClickState) {
+                    clicked = true;
+                }
                 if (audioManager) {
-                    audioManager->playEffect("assets/audio/click.wav");
+                    audioManager->playSound("assets/audio/click.mp3"); 
                 }
                 return true;
             }
-        } else {
-            hovered = false;
-            hoverPlayed = false;
-        }
+            break;
+            
+        case SDL_MOUSEBUTTONUP:
+            // Chỉ reset clicked state nếu button KHÔNG có clickState
+            if (!hasClickState) {
+                clicked = false;
+            }
+            break;
     }
     return false;
 }
 
-void Button::setClicked(bool clicked) {
-    this->clicked = clicked;
+void Button::setClicked(bool isClicked) {
+    // Chỉ set clicked state nếu button có clickState
+    if (hasClickState) {
+        clicked = isClicked;
+    }
 }
 
 void Button::clean() {

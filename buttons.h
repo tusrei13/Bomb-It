@@ -35,6 +35,7 @@ private:
     std::string clickSoundPath;
     bool hoverPlayed; // To prevent repeated hover sound
     SDL_Rect position; // Thêm thành viên để lưu vị trí và kích thước của nút
+    bool handleHover(const SDL_Event& event);
 };
 
 #endif // BUTTONS_H
