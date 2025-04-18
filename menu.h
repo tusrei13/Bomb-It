@@ -8,9 +8,10 @@
 enum class ScreenState {
     MENU,
     HOW_TO_PLAY,
-    INTRO,          // Add INTRO state
-    GAME_SETTINGS,  // Add GAME_SETTINGS state
-    GAME_MANAGER    // Add GAME_MANAGER state
+    INTRO,
+    GAME_SETTINGS,
+    GAME_MANAGER,
+    GAME // Thêm trạng thái GAME
 };
 
 class Menu {

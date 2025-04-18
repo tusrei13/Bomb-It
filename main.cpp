@@ -13,7 +13,8 @@
 #include "menu.h"
 #include "how_to_play.h"
 #include "intro.h"
-#include "game_settings.h" 
+#include "game_settings.h"
+#include "game.h" // Thêm include game.h
 
 int main(int argc, char* argv[]) {
     // Initialize SDL
@@ -49,16 +50,16 @@ int main(int argc, char* argv[]) {
 
     // Initialize screens
     Menu menu;
-    menu.init(renderer, &audioManager); // Khởi tạo menu với renderer và audioManager
-
     HowToPlay howToPlay;
-    howToPlay.init(renderer, &audioManager); // Khởi tạo howToPlay
-
     Intro intro;
-    intro.init(renderer, &audioManager); // Khởi tạo intro
+    Game game;
+    GameSettings gameSettings(&game);
 
-    GameSettings gameSettings;
-    gameSettings.init(renderer, &audioManager); // Khởi tạo gameSettings
+    menu.init(renderer, &audioManager);
+    howToPlay.init(renderer, &audioManager);
+    intro.init(renderer, &audioManager);
+    gameSettings.init(renderer, &audioManager);
+    game.init(renderer);
 
     ScreenState currentState = ScreenState::MENU;
     bool running = true;
@@ -86,6 +87,11 @@ int main(int argc, char* argv[]) {
                 if (currentState == ScreenState::MENU) {
                     gameSettings.reset(); // Reset game settings when transitioning back to MENU
                 }
+            } else if (currentState == ScreenState::GAME) {
+                // Xử lý sự kiện cho màn hình game
+                if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
+                    currentState = ScreenState::GAME_SETTINGS;
+                }
             }
         }
 
@@ -100,6 +106,8 @@ int main(int argc, char* argv[]) {
             intro.render(renderer);
         } else if (currentState == ScreenState::GAME_SETTINGS) {
             gameSettings.render(renderer);
+        } else if (currentState == ScreenState::GAME) {
+            game.render(renderer);
         }
         SDL_RenderPresent(renderer);
     }
@@ -109,6 +117,7 @@ int main(int argc, char* argv[]) {
     howToPlay.clean();
     intro.clean();
     gameSettings.clean();
+    game.clean(); // Thêm dọn dẹp game
     audioManager.clean(); // Dọn dẹp AudioManager
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

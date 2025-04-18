@@ -3,7 +3,7 @@
 #include "include/SDL_mixer.h"
 #include <iostream>
 
-GameSettings::GameSettings()
+GameSettings::GameSettings(Game* game)
     : backgroundTexture(nullptr),
       onePlayerButton("1 Player", 502, 302, 62, 30, true),
       twoPlayerButton("2 Player", 565, 302, 62, 30, true),
@@ -13,11 +13,13 @@ GameSettings::GameSettings()
       normalButton("Normal", 621, 414, 118, 30, true),
       hardButton("Hard", 740, 414, 118, 30, true),
       backButton("Back", 430, 625, 182, 64, false),
-      startButton("Start", 662, 625, 192, 64, false) {}
+      startButton("Start", 662, 625, 192, 64, false),
+      game(game) {}
 
 GameSettings::~GameSettings() {}
 
 void GameSettings::init(SDL_Renderer* renderer, AudioManager* audioManager) {
+    this->renderer = renderer;  // Lưu renderer
     this->audioManager = audioManager;
     audioManager->playMusic("assets/audio/menu_music.mp3", -1); // Play menu music
     SDL_Surface* surface = IMG_Load("assets/image/screens/game_settings.png");
@@ -72,6 +74,7 @@ void GameSettings::handleEvents(SDL_Event& event, ScreenState& currentState) {
             audioManager->playSound("assets/audio/hover.mp3"); // Play hover sound
         } else if (event.type == SDL_MOUSEBUTTONDOWN) {
             audioManager->playSound("assets/audio/click.mp3"); // Play click sound
+            audioManager->playMusic("assets/audio/menu_music.mp3", -1); // Play menu music again
             currentState = ScreenState::MENU; // Transition back to MENU
         }
     }
@@ -81,7 +84,11 @@ void GameSettings::handleEvents(SDL_Event& event, ScreenState& currentState) {
             audioManager->playSound("assets/audio/hover.mp3"); // Play hover sound
         } else if (event.type == SDL_MOUSEBUTTONDOWN) {
             audioManager->playSound("assets/audio/click.mp3"); // Play click sound
-            currentState = ScreenState::GAME_MANAGER; // Transition to GAME_MANAGER
+            if (!selectedMap.empty() && game != nullptr) {
+                game->init(this->renderer); // Sử dụng renderer đã lưu
+                game->setCurrentMap(selectedMap);
+                currentState = ScreenState::GAME;
+            }
         }
     }
 
@@ -98,10 +105,12 @@ void GameSettings::handleEvents(SDL_Event& event, ScreenState& currentState) {
     // Handle arena selection buttons
     if (basketballButton.handleEvent(event)) {
         tombButton.resetClick(); // Reset other button in the group
+        selectedMap = "basketball";
         std::cout << "Basketball arena selected!" << std::endl;
     }
     if (tombButton.handleEvent(event)) {
         basketballButton.resetClick(); // Reset other button in the group
+        selectedMap = "tomb";
         std::cout << "Tomb arena selected!" << std::endl;
     }
 

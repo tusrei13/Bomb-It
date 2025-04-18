@@ -2,13 +2,15 @@
 #define GAME_SETTINGS_H
 
 #include "buttons.h"
-#include "menu.h" // For ScreenState
+#include "menu.h"
+#include "game.h"
 #include "include/SDL.h"
 #include <vector>
+#include <string>
 
 class GameSettings {
 public:
-    GameSettings();
+    GameSettings(Game* game);
     ~GameSettings();
 
     void init(SDL_Renderer* renderer, AudioManager* audioManager);
@@ -29,6 +31,9 @@ private:
     Button backButton;
     Button startButton;
     AudioManager* audioManager; // Thêm thành viên audioManager
+    SDL_Renderer* renderer;  // Thêm biến renderer
+    std::string selectedMap; // Thêm biến lưu map được chọn
+    Game* game; // Con trỏ đến đối tượng Game
 };
 
 #endif // GAME_SETTINGS_H
