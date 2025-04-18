@@ -5,6 +5,9 @@
 #include "buttons.h"
 #include "include/SDL.h"
 
+// Forward declaration
+class GameSettings;
+
 enum class ScreenState {
     MENU,
     HOW_TO_PLAY,
@@ -23,12 +26,14 @@ public:
     void render(SDL_Renderer* renderer);
     void handleEvents(SDL_Event& event, ScreenState& currentState);
     void clean();
+    void setGameSettings(GameSettings* settings) { gameSettings = settings; }
 
 private:
     SDL_Texture* backgroundTexture;
     Button startMenuButton;
     Button howToPlayButton;
     AudioManager* audioManager; // Thêm thành viên audioManager
+    GameSettings* gameSettings;
 };
 
 #endif // MENU_H

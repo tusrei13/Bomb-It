@@ -1,12 +1,14 @@
 #include "menu.h"
 #include "include/SDL_image.h"
 #include "include/SDL_mixer.h"
+#include "game_settings.h" // Thêm include này
 #include <iostream>
 
 Menu::Menu()
     : backgroundTexture(nullptr),
       startMenuButton("Start", 701, 221, 287, 74),
-      howToPlayButton("How to Play", 697, 327, 287, 74) {}
+      howToPlayButton("How to Play", 697, 327, 287, 74),
+      gameSettings(nullptr) {}  // Khởi tạo gameSettings
 
 Menu::~Menu() {}
 
@@ -50,9 +52,12 @@ void Menu::render(SDL_Renderer* renderer) {
 void Menu::handleEvents(SDL_Event& event, ScreenState& currentState) {
     if (startMenuButton.handleEvent(event)) {
         if (event.type == SDL_MOUSEBUTTONDOWN) {
-            audioManager->playSound("assets/audio/click.mp3"); // Play click sound
-            audioManager->playMusic("assets/audio/intro.mp3", 0); // Play intro music
-            currentState = ScreenState::INTRO; // Transition to INTRO
+            audioManager->playSound("assets/audio/click.mp3");
+            audioManager->playMusic("assets/audio/intro.mp3", 0);
+            if (gameSettings) {  // Kiểm tra nullptr
+                gameSettings->reset();
+            }
+            currentState = ScreenState::INTRO;
         }
     }
 

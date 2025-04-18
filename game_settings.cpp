@@ -85,7 +85,9 @@ void GameSettings::handleEvents(SDL_Event& event, ScreenState& currentState) {
         } else if (event.type == SDL_MOUSEBUTTONDOWN) {
             audioManager->playSound("assets/audio/click.mp3"); // Play click sound
             if (!selectedMap.empty() && game != nullptr) {
-                game->init(this->renderer); // Sử dụng renderer đã lưu
+                audioManager->stopMusic(); // Dừng nhạc menu
+                audioManager->playMusic("assets/audio/game_music.mp3", -1); // Phát nhạc game
+                game->init(this->renderer, this->audioManager); // Sử dụng renderer và audioManager đã lưu
                 game->setCurrentMap(selectedMap);
                 currentState = ScreenState::GAME;
             }

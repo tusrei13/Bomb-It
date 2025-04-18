@@ -7,7 +7,7 @@ Button::Button(const std::string& text, int x, int y, int width, int height, boo
       normalTexture(nullptr), hoverTexture(nullptr), clickTexture(nullptr),
       hovered(false), clicked(false), hasClickState(hasClickState),
       audioManager(nullptr), hoverPlayed(false) {
-    position = {x, y, width, height}; // Khởi tạo vị trí và kích thước của nút
+    position = {x, y, width, height};  // Initialize position rectangle
 }
 
 Button::~Button() {}

@@ -59,7 +59,9 @@ int main(int argc, char* argv[]) {
     howToPlay.init(renderer, &audioManager);
     intro.init(renderer, &audioManager);
     gameSettings.init(renderer, &audioManager);
-    game.init(renderer);
+    game.init(renderer, &audioManager);  // Thêm tham số audioManager
+
+    menu.setGameSettings(&gameSettings);
 
     ScreenState currentState = ScreenState::MENU;
     bool running = true;
@@ -88,7 +90,7 @@ int main(int argc, char* argv[]) {
                     gameSettings.reset(); // Reset game settings when transitioning back to MENU
                 }
             } else if (currentState == ScreenState::GAME) {
-                // Xử lý sự kiện cho màn hình game
+                game.handleEvents(event, currentState);  // Add this line
                 if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
                     currentState = ScreenState::GAME_SETTINGS;
                 }
