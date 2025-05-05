@@ -21,19 +21,15 @@ public:
 
 private:
     SDL_Texture* backgroundTexture;
-    Button onePlayerButton;
-    Button twoPlayerButton;
     Button basketballButton;
     Button tombButton;
-    Button easyButton;
-    Button normalButton;
-    Button hardButton;
     Button backButton;
     Button startButton;
-    AudioManager* audioManager; // Thêm thành viên audioManager
-    SDL_Renderer* renderer;  // Thêm biến renderer
-    std::string selectedMap; // Thêm biến lưu map được chọn
-    Game* game; // Con trỏ đến đối tượng Game
+    AudioManager* audioManager;
+    SDL_Renderer* renderer;
+    std::string selectedMap;
+    std::string selectedMode;
+    Game* game;
 };
 
 #endif // GAME_SETTINGS_H

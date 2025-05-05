@@ -71,7 +71,12 @@
         "text_encoding": "cpp",
         "cinttypes": "cpp",
         "variant": "cpp",
-        "sdl_image.h": "c"
+        "sdl_image.h": "c",
+        "map": "cpp",
+        "chrono": "cpp",
+        "unordered_set": "cpp",
+        "ratio": "cpp",
+        "iomanip": "cpp"
     },
     "C_Cpp.default.includePath": [
         "${workspaceFolder}/include",

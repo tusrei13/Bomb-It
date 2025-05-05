@@ -7,7 +7,10 @@ Button::Button(const std::string& text, int x, int y, int width, int height, boo
       normalTexture(nullptr), hoverTexture(nullptr), clickTexture(nullptr),
       hovered(false), clicked(false), hasClickState(hasClickState),
       audioManager(nullptr), hoverPlayed(false) {
-    position = {x, y, width, height};  // Initialize position rectangle
+    normalPosition = {x, y, width, height};
+    hoverPosition = {x, y, width, height};  // Default same as normal
+    clickPosition = {x, y, width, height};  // Default same as normal
+    position = normalPosition;  // Current position starts as normal
 }
 
 Button::~Button() {}
@@ -45,14 +48,31 @@ void Button::setAudio(AudioManager* audioManager) {
     hoverPlayed = false;
 }
 
+void Button::setNormalPosition(int x, int y, int w, int h) {
+    normalPosition = {x, y, w, h};
+    if (!hovered && !clicked) {
+        position = normalPosition;
+    }
+}
+
+void Button::setHoverPosition(int x, int y, int w, int h) {
+    hoverPosition = {x, y, w, h};
+}
+
+void Button::setClickPosition(int x, int y, int w, int h) {
+    clickPosition = {x, y, w, h};
+}
+
 void Button::render(SDL_Renderer* renderer) {
-    SDL_Rect rect = {x, y, width, height};
+    SDL_Rect* currentRect = &normalPosition;
     if (clicked && hasClickState) {
-        SDL_RenderCopy(renderer, clickTexture, nullptr, &rect);
+        currentRect = &clickPosition;
+        SDL_RenderCopy(renderer, clickTexture, nullptr, currentRect);
     } else if (hovered) {
-        SDL_RenderCopy(renderer, hoverTexture, nullptr, &rect);
+        currentRect = &hoverPosition;
+        SDL_RenderCopy(renderer, hoverTexture, nullptr, currentRect);
     } else {
-        SDL_RenderCopy(renderer, normalTexture, nullptr, &rect);
+        SDL_RenderCopy(renderer, normalTexture, nullptr, currentRect);
     }
 }
 
@@ -65,24 +85,26 @@ bool Button::handleEvent(SDL_Event& event) {
     switch(event.type) {
         case SDL_MOUSEMOTION:
             mousePos = {event.motion.x, event.motion.y};
-            if (SDL_PointInRect(&mousePos, &position)) {
+            if (SDL_PointInRect(&mousePos, &normalPosition)) {
                 if (!hovered && audioManager && !hoverPlayed) {
                     audioManager->playSound("assets/audio/hover.mp3");
                     hoverPlayed = true;
                 }
                 hovered = true;
+                position = hoverPosition;
             } else {
                 hovered = false;
                 hoverPlayed = false;
+                position = normalPosition;
             }
             break;
             
         case SDL_MOUSEBUTTONDOWN:
             mousePos = {event.button.x, event.button.y};
-            if (event.button.button == SDL_BUTTON_LEFT && SDL_PointInRect(&mousePos, &position)) {
-                // Chỉ set clicked = true nếu button có clickState
+            if (event.button.button == SDL_BUTTON_LEFT && SDL_PointInRect(&mousePos, &normalPosition)) {
                 if (hasClickState) {
                     clicked = true;
+                    position = clickPosition;
                 }
                 if (audioManager) {
                     audioManager->playSound("assets/audio/click.mp3"); 

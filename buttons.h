@@ -20,6 +20,9 @@ public:
     void setAudio(AudioManager* audioManager);
     bool isHovered(int x, int y); // Thêm phương thức kiểm tra hover
     bool isClicked(int x, int y); // Thêm phương thức kiểm tra click
+    void setNormalPosition(int x, int y, int w, int h);
+    void setHoverPosition(int x, int y, int w, int h);
+    void setClickPosition(int x, int y, int w, int h);
 
 private:
     std::string text;
@@ -36,6 +39,9 @@ private:
     bool hoverPlayed; // To prevent repeated hover sound
     SDL_Rect position; // Thêm thành viên để lưu vị trí và kích thước của nút
     bool handleHover(const SDL_Event& event);
+    SDL_Rect normalPosition;
+    SDL_Rect hoverPosition;
+    SDL_Rect clickPosition;
 };
 
 #endif // BUTTONS_H
